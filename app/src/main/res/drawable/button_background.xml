@@ -1,0 +1,7 @@
+<!-- Copyright (c) Microsoft. All rights reserved. -->
+
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true" android:state_enabled="true" android:drawable="@color/button_pressed_background" />
+    <item android:state_enabled="true" android:drawable="@color/button_enabled_background" />
+    <item android:state_enabled="false" android:drawable="@color/button_disabled_background" />
+</selector>
