@@ -44,12 +44,15 @@ import android.graphics.Rect;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.util.Log;
 
 import com.microsoft.projectoxford.face.contract.Face;
 import com.microsoft.projectoxford.face.contract.FaceRectangle;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 /**
  * Defined several functions to load, draw, save, resize, and rotate images.
@@ -319,5 +322,24 @@ public class ImageHelper {
         result.width = (int)sideLength;
         result.height = (int)sideLength;
         return result;
+    }
+
+
+    public static Bitmap getBitmapFromURL(String src) {
+        try {
+            Log.e("src",src);
+            URL url = new URL(src);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setDoInput(true);
+            connection.connect();
+            InputStream input = connection.getInputStream();
+            Bitmap myBitmap = BitmapFactory.decodeStream(input);
+            Log.e("Bitmap","returned");
+            return myBitmap;
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e("Exception",e.getMessage());
+            return null;
+        }
     }
 }

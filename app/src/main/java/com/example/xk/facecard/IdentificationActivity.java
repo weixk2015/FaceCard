@@ -1,15 +1,20 @@
 package com.example.xk.facecard;
 
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
@@ -21,33 +26,34 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
-
-import com.microsoft.projectoxford.face.*;
-import com.microsoft.projectoxford.face.contract.*;
+import com.microsoft.projectoxford.face.FaceServiceClient;
+import com.microsoft.projectoxford.face.FaceServiceRestClient;
+import com.microsoft.projectoxford.face.contract.Candidate;
+import com.microsoft.projectoxford.face.contract.Face;
+import com.microsoft.projectoxford.face.contract.FaceRectangle;
+import com.microsoft.projectoxford.face.contract.IdentifyResult;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Array;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 
 public class IdentificationActivity extends AppCompatActivity {
     private final int PICK_IMAGE = 1;
     private FaceServiceClient faceServiceClient;
-    String mPersonGroupId;
+    String mPersonGroupId = "1";
     boolean detected;
     FaceListAdapter mFaceListAdapter;
     Face[] detectedFaces;
     //PersonGroupListAdapter mPersonGroupListAdapter;
-
 
     // Background task of face identification.
 
@@ -65,21 +71,21 @@ public class IdentificationActivity extends AppCompatActivity {
             try {
                 publishProgress("Getting person group status...");
                 FaceServiceClient faceServiceClient = FaceClientApp.getFaceServiceClient();
-                TrainingStatus trainingStatus = faceServiceClient.getPersonGroupTrainingStatus(
-                        this.mPersonGroupId);     /* personGroupId */
+               // TrainingStatus trainingStatus = faceServiceClient.getPersonGroupTrainingStatus(
+                 //       this.mPersonGroupId);     /* personGroupId */
 
-                if (trainingStatus.status != TrainingStatus.Status.Succeeded) {
-                    publishProgress("Person group training status is " + trainingStatus.status);
-                    mSucceed = false;
-                    return null;
-                }
+//                if (trainingStatus.status != TrainingStatus.Status.Succeeded) {
+//                    publishProgress("Person group training status is " + trainingStatus.status);
+//                    mSucceed = false;
+//                    return null;
+//                }
 
                 publishProgress("Identifying...");
 
                 // Start identification.
                 return faceServiceClient.identity(
                         this.mPersonGroupId,   /* personGroupId */
-                        params,                  /* faceIds */
+                        params,/* faceIds */
                         3);  /* maxNumOfCandidatesReturned */
             } catch (Exception e) {
                 mSucceed = false;
@@ -116,6 +122,7 @@ public class IdentificationActivity extends AppCompatActivity {
         progressDialog.setTitle(getString(R.string.progress_dialog_title));
         faceServiceClient = new FaceServiceRestClient(getString(R.string.endpoint), getString(R.string.subscription_key));
         Button selectImageButton = (Button) findViewById(R.id.select_image);
+        //mFaceListAdapter = new FaceListAdapter();
         selectImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -124,6 +131,10 @@ public class IdentificationActivity extends AppCompatActivity {
                 startActivityForResult(Intent.createChooser(gallIntent, "Select Picture"), PICK_IMAGE);
             }
         });
+        if (android.os.Build.VERSION.SDK_INT > 9) {
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            StrictMode.setThreadPolicy(policy);
+        }
     }
 
     @Override
@@ -155,7 +166,7 @@ public class IdentificationActivity extends AppCompatActivity {
     }
 
     // Show the result on screen when detection is done.
-    private void setUiAfterIdentification(IdentifyResult[] result, boolean succeed) {
+    private void setUiAfterIdentification(final IdentifyResult[] result, boolean succeed) {
         progressDialog.dismiss();
 
         setAllButtonsEnabledStatus(true);
@@ -166,10 +177,38 @@ public class IdentificationActivity extends AppCompatActivity {
             setInfo("Identification is done");
 
             if (result != null) {
+                mFaceListAdapter = new FaceListAdapter(result[0]);
                 mFaceListAdapter.setIdentificationResult(result[0]);
                 // Show the detailed list of detected faces.
                 ListView listView = (ListView) findViewById(R.id.list_identified_faces);
                 listView.setAdapter(mFaceListAdapter);
+
+                @SuppressLint("HandlerLeak") final Handler refresh_handler = new Handler() {
+                    @Override
+                    public void handleMessage(Message msg) {
+                        if (msg.arg1 == 0) {
+                            mFaceListAdapter.notifyDataSetChanged();
+                            HashMap hashMap = RemoteHelper.cacheHashMap;
+                        }
+                    }
+                };
+                @SuppressLint("HandlerLeak") final Handler m_handler = new Handler() {
+                    @Override
+                    public void handleMessage(Message msg) {
+                        if (msg.arg1 == 0) {
+                            RemoteHelper.getImage(result[0],mPersonGroupId,mFaceListAdapter,refresh_handler);
+                        }
+                    }
+                };
+                new Thread() {
+                    @Override
+                    public void run() {
+                        Message msg = m_handler.obtainMessage();
+                        msg.arg1 = 0;
+                        m_handler.sendMessage(msg);
+                    }
+                }.start();
+
             }
         }
     }
@@ -339,12 +378,13 @@ public class IdentificationActivity extends AppCompatActivity {
 
     // Set the information panel on screen.
     private void setInfo(String info) {
-        TextView textView = (TextView) findViewById(R.id.info);
-        textView.setText(info);
+        Toast.makeText(this, info, Toast.LENGTH_LONG).show();
+//        TextView textView = (TextView) findViewById(R.id.info);
+//        textView.setText(info);
     }
 
     // The adapter of the GridView which contains the details of the candidates for selected image.
-    private class FaceListAdapter extends BaseAdapter {
+    class FaceListAdapter extends BaseAdapter {
         // The detected faces.
         // List<Face> faces;
         List<Candidate> candidates;
@@ -353,46 +393,24 @@ public class IdentificationActivity extends AppCompatActivity {
         IdentifyResult mIdentifyResults;
 
         // The thumbnails of candidates.
-        List<Bitmap> faceThumbnails;
+        List<Bitmap> faceImages;
 
         FaceListAdapter(IdentifyResult identifyResult) {
             mIdentifyResults = identifyResult;
-            faceThumbnails = new ArrayList<>();
+            faceImages = new ArrayList<>();
 
             if (identifyResult != null) {
                 candidates = identifyResult.candidates; //default one face
                 for (Candidate candidate : candidates) {
+                    faceImages.add(BitmapFactory.decodeResource(getResources(), R.drawable.loading));
 
-
-                    /*******/
-                    //  faceThumbnails.add(ImageHelper.generateFaceThumbnail(ImageHelper.loadSizeLimitedBitmapFromUri()))
                 }
             }
 
 
         }
 
-        // Initialize with detection result.
-//        FaceListAdapter(Face[] detectionResult) {
-//            //  faces = new ArrayList<>();
-//            faceThumbnails = new ArrayList<>();
-//            //         mIdentifyResults = new ArrayList<>();
-//
-//            if (detectionResult != null) {
-//                //faces = Arrays.asList(detectionResult);
-////                for (Face face : faces) {
-////                    try {
-////
-////                        // Crop face thumbnail with five main landmarks drawn from original image.
-////                        faceThumbnails.add(ImageHelper.generateFaceThumbnail(
-////                                mBitmap, face.faceRectangle));
-////                    } catch (IOException e) {
-////                        // Show the exception when generating face thumbnail fails.
-////                        setInfo(e.getMessage());
-////                    }
-////                }
-//            }
-//        }
+
 
         public void setIdentificationResult(IdentifyResult identifyResult) {
             mIdentifyResults = identifyResult;
@@ -430,13 +448,13 @@ public class IdentificationActivity extends AppCompatActivity {
 
             // Show the face thumbnail.
             ((ImageView) convertView.findViewById(R.id.face_thumbnail)).setImageBitmap(
-                    faceThumbnails.get(position));
+                    faceImages.get(position));
 
 
             // Show the face details.
             DecimalFormat formatter = new DecimalFormat("#0.00");
             if (candidates != null && candidates.get(position) != null) {
-                String personId =
+                final String personId =
                         candidates.get(position).personId.toString();
                 String personName = RemoteHelper.getPersonName(
                         personId, mPersonGroupId, IdentificationActivity.this);
@@ -445,6 +463,16 @@ public class IdentificationActivity extends AppCompatActivity {
                         candidates.get(position).confidence);
                 ((TextView) convertView.findViewById(R.id.text_detected_face)).setText(
                         identity);
+                convertView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(IdentificationActivity.this, PersonActivity.class);
+                        intent.putExtra("id", personId);
+                        startActivity(intent);
+                    }
+                });
+
+
             } else {
                 ((TextView) convertView.findViewById(R.id.text_detected_face)).setText(
                         R.string.face_cannot_be_identified);
