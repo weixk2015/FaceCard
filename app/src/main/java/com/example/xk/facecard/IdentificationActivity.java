@@ -403,14 +403,37 @@ public class IdentificationActivity extends AppCompatActivity {
                 candidates = identifyResult.candidates; //default one face
                 for (Candidate candidate : candidates) {
                     faceImages.add(BitmapFactory.decodeResource(getResources(), R.drawable.loading));
+                   // faceImages.add(ImageHelper.getBitmapFromURL(RemoteHelper.getImage(candidate.personId.toString(), mPersonGroupId,null)));
 
+                    /*******/
+                    //  faceThumbnails.add(ImageHelper.generateFaceThumbnail(ImageHelper.loadSizeLimitedBitmapFromUri()))
                 }
             }
 
 
         }
 
-
+        // Initialize with detection result.
+//        FaceListAdapter(Face[] detectionResult) {
+//            //  faces = new ArrayList<>();
+//            faceThumbnails = new ArrayList<>();
+//            //         mIdentifyResults = new ArrayList<>();
+//
+//            if (detectionResult != null) {
+//                //faces = Arrays.asList(detectionResult);
+////                for (Face face : faces) {
+////                    try {
+////
+////                        // Crop face thumbnail with five main landmarks drawn from original image.
+////                        faceThumbnails.add(ImageHelper.generateFaceThumbnail(
+////                                mBitmap, face.faceRectangle));
+////                    } catch (IOException e) {
+////                        // Show the exception when generating face thumbnail fails.
+////                        setInfo(e.getMessage());
+////                    }
+////                }
+//            }
+//        }
 
         public void setIdentificationResult(IdentifyResult identifyResult) {
             mIdentifyResults = identifyResult;

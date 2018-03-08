@@ -14,16 +14,19 @@
 
     <LinearLayout
         android:id="@+id/linearLayout2"
-        android:layout_width="372dp"
-        android:layout_height="522dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:layout_alignParentTop="true"
+        android:layout_marginBottom="16dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/identify"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.52">
 
         <RelativeLayout
             android:layout_width="wrap_content"
@@ -69,18 +72,15 @@
         android:id="@+id/identify"
         style="@style/ButtonStyle"
         android:layout_width="0dp"
-        android:layout_height="40dp"
-        android:layout_marginBottom="8dp"
+        android:layout_height="wrap_content"
         android:layout_marginEnd="4dp"
         android:layout_marginStart="4dp"
-        android:layout_marginTop="12dp"
         android:layout_weight="1"
         android:onClick="identify"
         android:text="@string/identify"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
         tools:ignore="OnClick" />
 
 </android.support.constraint.ConstraintLayout>

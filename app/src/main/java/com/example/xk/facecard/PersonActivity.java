@@ -1,6 +1,10 @@
 package com.example.xk.facecard;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.ImageView;
@@ -17,7 +21,7 @@ public class PersonActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_person);
         Intent intent = getIntent();
-        String personId = intent.getStringExtra("id");
+        final String personId = intent.getStringExtra("id");
         HashMap<String, String> userDataInfo = RemoteHelper.cacheHashMap.get(personId);
 
 
@@ -49,7 +53,8 @@ public class PersonActivity extends AppCompatActivity {
         if(name == null)
             name = "当前信息无法加载";
 
-
+        final ImageView imageView = (ImageView) findViewById(R.id.imageView);
+        imageView.setImageBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.loading));
         TextView textView0 = (TextView) findViewById(R.id.textView0);
         textView0.append(title);
         TextView textView1 = (TextView) findViewById(R.id.textView1);
@@ -65,9 +70,28 @@ public class PersonActivity extends AppCompatActivity {
         TextView textView6 = (TextView) findViewById(R.id.textView6);
         textView6.append(name);
 
+        @SuppressLint("HandlerLeak") final Handler refresh_handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                if (msg.arg1 == 0) {
+                    imageView.setImageBitmap(RemoteHelper.getBitmapByID(personId));
+                }
+            }
+        };
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                Message msg = refresh_handler.obtainMessage();
+                msg.arg1 = 0;
+                refresh_handler.sendMessage(msg);
+            }
+        }.start();
 
-        ImageView imageView = (ImageView) findViewById(R.id.imageView);
-        imageView.setImageBitmap(getBitmapFromURL(RemoteHelper.getImage(personId, "1", null)));
 
 //        ImageView imageView = (ImageView) findViewById(R.id.imageView);
 //        imageView.setImageBitmap(getBitmapFromURL(RemoteHelper.getImage(personId, mpersongroupId, null)));

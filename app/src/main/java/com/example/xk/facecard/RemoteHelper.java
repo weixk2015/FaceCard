@@ -20,6 +20,8 @@ import org.json.JSONObject;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
+
+import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Message;
 
@@ -32,6 +34,7 @@ import cz.msebera.android.httpclient.Header;
 public class RemoteHelper {
     static final String value = "745f790a22584b42b934018ba37932a4";
     static HashMap<String,HashMap<String,String>> cacheHashMap = new HashMap<>();
+    static HashMap<String,Bitmap> cacheBitMap = new HashMap<>();
     public static String getPersonName(String personId, String mPersonGroupId, IdentificationActivity identificationActivity) {
         HttpClient httpclient = new DefaultHttpClient();
 
@@ -163,7 +166,9 @@ public class RemoteHelper {
                         String imageUri = jsonObject.getString("userData");
 
                         //String imageUri = getImageUri(pID,mPersonGroupId, faceID.getString(0),null);
-                        faceListAdapter.faceImages.set(finalI,ImageHelper.getBitmapFromURL(imageUri));
+                        Bitmap bitmap = ImageHelper.getBitmapFromURL(imageUri);
+                        faceListAdapter.faceImages.set(finalI,bitmap);
+                        cacheBitMap.put(pID,bitmap);
                         Message msg = handler.obtainMessage();
                         msg.arg1 = 0;
                         handler.sendMessage(msg);
@@ -206,5 +211,13 @@ public class RemoteHelper {
             }
         }
         return userDataInfo;
+    }
+
+    public static Bitmap getBitmapByID(String personId) {
+        if (cacheBitMap.get(personId)==null){
+            return ImageHelper.getBitmapFromURL(getImage(personId,"1",null));
+        }else {
+            return cacheBitMap.get(personId);
+        }
     }
 }
