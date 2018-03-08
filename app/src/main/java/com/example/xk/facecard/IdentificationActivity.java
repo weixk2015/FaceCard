@@ -43,6 +43,8 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 
@@ -69,16 +71,7 @@ public class IdentificationActivity extends AppCompatActivity {
         protected IdentifyResult[] doInBackground(UUID... params) {
 
             try {
-                publishProgress("Getting person group status...");
                 FaceServiceClient faceServiceClient = FaceClientApp.getFaceServiceClient();
-               // TrainingStatus trainingStatus = faceServiceClient.getPersonGroupTrainingStatus(
-                 //       this.mPersonGroupId);     /* personGroupId */
-
-//                if (trainingStatus.status != TrainingStatus.Status.Succeeded) {
-//                    publishProgress("Person group training status is " + trainingStatus.status);
-//                    mSucceed = false;
-//                    return null;
-//                }
 
                 publishProgress("Identifying...");
 
@@ -378,9 +371,10 @@ public class IdentificationActivity extends AppCompatActivity {
 
     // Set the information panel on screen.
     private void setInfo(String info) {
-        Toast.makeText(this, info, Toast.LENGTH_LONG).show();
-//        TextView textView = (TextView) findViewById(R.id.info);
-//        textView.setText(info);
+        Toast toast=Toast.makeText(this,info, Toast.LENGTH_LONG);
+        showMyToast(toast, 500);
+        //Toast.makeText(this, info, Toast.LENGTH_SHORT).show();
+
     }
 
     // The adapter of the GridView which contains the details of the candidates for selected image.
@@ -403,37 +397,11 @@ public class IdentificationActivity extends AppCompatActivity {
                 candidates = identifyResult.candidates; //default one face
                 for (Candidate candidate : candidates) {
                     faceImages.add(BitmapFactory.decodeResource(getResources(), R.drawable.loading));
-                   // faceImages.add(ImageHelper.getBitmapFromURL(RemoteHelper.getImage(candidate.personId.toString(), mPersonGroupId,null)));
-
-                    /*******/
-                    //  faceThumbnails.add(ImageHelper.generateFaceThumbnail(ImageHelper.loadSizeLimitedBitmapFromUri()))
                 }
             }
 
 
         }
-
-        // Initialize with detection result.
-//        FaceListAdapter(Face[] detectionResult) {
-//            //  faces = new ArrayList<>();
-//            faceThumbnails = new ArrayList<>();
-//            //         mIdentifyResults = new ArrayList<>();
-//
-//            if (detectionResult != null) {
-//                //faces = Arrays.asList(detectionResult);
-////                for (Face face : faces) {
-////                    try {
-////
-////                        // Crop face thumbnail with five main landmarks drawn from original image.
-////                        faceThumbnails.add(ImageHelper.generateFaceThumbnail(
-////                                mBitmap, face.faceRectangle));
-////                    } catch (IOException e) {
-////                        // Show the exception when generating face thumbnail fails.
-////                        setInfo(e.getMessage());
-////                    }
-////                }
-//            }
-//        }
 
         public void setIdentificationResult(IdentifyResult identifyResult) {
             mIdentifyResults = identifyResult;
@@ -505,5 +473,24 @@ public class IdentificationActivity extends AppCompatActivity {
             return convertView;
         }
     }
+
+
+    public void showMyToast(final Toast toast, final int cnt) {
+        final Timer timer =new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                toast.show();
+            }
+        },0,3000);
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                toast.cancel();
+                timer.cancel();
+            }
+        }, cnt );
+    }
+
 
 }
